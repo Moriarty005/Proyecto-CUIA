@@ -1,0 +1,15 @@
+# camara.kv
+<CamaraScreen>:
+    on_enter: app.controller.playWebcam()
+    on_leave: app.controller.leaveCamera()
+    BoxLayout:
+        orientation: 'vertical'
+
+        Image:
+            id: camera_view
+            size_hint: 1, 0.8
+        Button:
+            size_hint: dp(0.5), dp(0.2)
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+            text: "Cerrar Camara"
+            on_press: app.controller.cerrarCam()

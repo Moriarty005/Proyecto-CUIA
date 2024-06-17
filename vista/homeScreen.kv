@@ -1,0 +1,52 @@
+<HomeScreen>:
+    name: 'home'
+    BoxLayout:
+        orientation: 'vertical'
+        pos_hint: {"center_x": 0.5, "center_y": 0.5}
+
+        FloatLayout:
+            size_hint: dp(1), dp(.3)
+            MDRaisedButton:
+                anchor_x: 'center'
+                text: 'Logout'
+                on_press: app.controller.logout()
+                size_hint: dp(.2), dp(.2)
+                pos_hint: {"right":1, "center_y":0.5}
+            Image:
+                source: 'media/logo.png'
+                size_hint: dp(.5), None
+                pos_hint: {"center_x":0.5, "center_y":.5}
+
+        BoxLayout
+            orientation: 'vertical'
+            pos_hint_x: 0.5
+            size_hint: dp(.5), dp(.7)
+            spacing: 10
+            padding: 10
+            pos_hint: {"center_x": 0.5, "center_y": 0.5}
+
+            MDRaisedButton:
+                text: 'Eventos'
+                size_hint_y: dp(self.parent.height / 5)
+                size_hint_x: dp(1)
+                on_press: app.controller.moveToEventsPage()
+
+            MDRaisedButton:
+                text: 'Button 2'
+                size_hint_y: dp(self.parent.height / 5)
+                size_hint_x: dp(1)
+
+            MDRaisedButton:
+                text: 'Button 3'
+                size_hint_y: dp(self.parent.height / 5)
+                size_hint_x: dp(1)
+
+            MDRaisedButton:
+                text: 'Button 4'
+                size_hint_y: dp(self.parent.height / 5)
+                size_hint_x: dp(1)
+
+            MDRaisedButton:
+                text: 'Button 5'
+                size_hint_y: dp(self.parent.height / 5)
+                size_hint_x: dp(1)

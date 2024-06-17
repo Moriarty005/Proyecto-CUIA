@@ -1,0 +1,57 @@
+<EventInfoScreen>
+    name: 'eventInfo'
+    BoxLayout:
+        orientation: 'vertical'
+        pos_hint: {"center_x": 0.5, "center_y": 0.5}
+
+        FloatLayout:
+            size_hint: dp(1), dp(.3)
+            Button:
+                size_hint: None, None
+                size: dp(50), dp(50)
+                pos_hint: {'left': 0, 'center_y': 0.5}
+                on_press: app.controller.moveToPreviousPage()
+
+                Image:
+                    source: 'media/back.png'
+                    size_hint: None, None
+                    size: dp(50), dp(50)
+                    center_x: self.parent.center_x
+                    center_y: self.parent.center_y
+            Image:
+                source: 'media/logo.png'
+                size_hint: dp(.5), None
+                pos_hint: {"center_x":0.5, "center_y":.5}
+
+        MDCard:
+            size_hint: dp(1), dp(.7)
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+            elevation: 10
+            padding: 25
+            spacing: 20
+            orientation: 'vertical'
+
+            MDLabel:
+                text: 'Evento'
+                font_style: 'H4'
+                halign: 'center'
+            MDLabel:
+                id: nombre_evento
+                font_style: 'Body1'
+                halign: 'center'
+            MDLabel:
+                id: recinto_evento
+                font_style: 'Body1'
+                halign: 'center'
+            MDLabel:
+                id: direccion_evento
+                font_style: 'Body1'
+                halign: 'center'
+            MDLabel:
+                id: fecha_evento
+                font_style: 'Body1'
+                halign: 'center'
+            MDRaisedButton:
+                text: 'Por implementar (reconocimiento facial)'
+                pos_hint: {'center_x': 0.5}
+                on_press: app.controller.moveToCamPage()
