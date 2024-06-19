@@ -19,7 +19,7 @@ class EventsScreen(Screen):
 
     def cargar_data_eventos(self, data):
         print(str(data))
-        self.ids.eventos.data = [{"id_evento": str(item[0]), "first_label_text": str(item[1]), "second_label_text": str(item[4])} for item in data]
+        self.ids.eventos.data = [{"id_evento": str(item[0]), "info": "Evento: "+str(item[1])+"\n"+"Fecha del evento: "+str(item[4])} for item in data]
 
 class EventInfoScreen(Screen):
     pass

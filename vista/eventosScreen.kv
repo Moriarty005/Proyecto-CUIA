@@ -37,29 +37,9 @@
                 orientation: 'vertical'
 
 <EventoLabel@Button>:
-    first_label_text: ''
-    second_label_text: ''
+    info: ''
     id_evento: ''
     size_hint_y: None
     height: dp(56)
     on_press: app.controller.moveToEventInfoPage(self.id_evento)
-    BoxLayout:
-        orientation: 'vertical'
-        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
-        size_hint: 1, 1
-        Label:
-            id: first_label
-            text: root.first_label_text
-            size_hint_y: None
-            height: self.texture_size[1]
-            halign: 'center'
-            valign: 'middle'
-            text_size: self.size
-        Label:
-            id: second_label
-            text: root.second_label_text
-            size_hint_y: None
-            height: self.texture_size[1]
-            halign: 'center'
-            valign: 'middle'
-            text_size: self.size
+    text: root.info
