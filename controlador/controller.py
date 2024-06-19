@@ -87,16 +87,16 @@ class Controller:
 
     def codificarCaraUsuario(self):
         # Cargamos la cara que queremos comparar
-        ellen = cv2.imread("media/xinio.jpeg")
-        ellen = cv2.resize(ellen, dsize=None, fx=0.5, fy=0.5)
-        #Codificamos la cara para
+        foto_usuario = cv2.imread("media/xinio.jpeg") #TODO traernos la foto de la base de datos
+        foto_usuario = cv2.resize(foto_usuario, dsize=None, fx=0.5, fy=0.5)
+        #Codificamos la cara
         fr = cv2.FaceRecognizerSF.create("dnn/face_recognition_sface_2021dec.onnx", "")
-        h2, w2, _ = ellen.shape
+        h2, w2, _ = foto_usuario.shape
         detector2 = cv2.FaceDetectorYN.create("dnn/face_detection_yunet_2023mar.onnx", config="", input_size=(w2, h2),
                                               score_threshold=0.7)
-        ret, caraellen = detector2.detect(ellen)
-        ellencrop = fr.alignCrop(ellen, caraellen[0])
-        self.face_code = fr.feature(ellencrop)
+        ret, cara_usuario = detector2.detect(foto_usuario)
+        usuario_crop = fr.alignCrop(foto_usuario, cara_usuario[0])
+        self.face_code = fr.feature(usuario_crop)
 
     def update(self, dt):
 
@@ -107,35 +107,7 @@ class Controller:
 
         camara_screen = self.app.screen_manager.get_screen('camara') #Nos traemos la pantalla de la camara a una variable para poder modificar la imagen y meterle el frame de la camara
 
-        h, w, _ = frame.shape
-        detector = cv2.FaceDetectorYN.create("dnn/face_detection_yunet_2023mar.onnx", config="", input_size=(w, h), score_threshold=0.7)
-        fr = cv2.FaceRecognizerSF.create("dnn/face_recognition_sface_2021dec.onnx", "")
-        ret, caras = detector.detect(frame)
-
-        #Seccion de debug porque da un fallo de tamaños
-        '''print("Frame original - Tipo de imagen: ", type(frame))
-        print("Frame original - Forma de la imagen: ", frame.shape)
-        print("Frame original - Tipo de datos de la imagen: ", frame.dtype)
-        print("Imagen RGB - Tipo de imagen: ", type(ellen))
-        print("Imagen RGB - Forma de la imagen: ", ellen.shape)
-        print("Imagen RGB - Tipo de datos de la imagen: ", ellen.dtype)'''
-        #Fin de la seccion de debug
-
-
-        #comparamos las cara y hacemos que se dibuje un rectangulo en la que concuerde
-        for cara in caras:
-            c = cara.astype(int)
-            caracrop = fr.alignCrop(frame, cara)
-            codcara = fr.feature(caracrop)
-            semejanza = fr.match(self.face_code, codcara, cv2.FaceRecognizerSF_FR_COSINE)
-            if semejanza > 0.5:
-                color = (0, 255, 0)
-                self.cerrarCam()
-            else:
-                color = (0, 0, 255)
-            cv2.rectangle(frame, (c[0], c[1]), (c[0] + c[2], c[1] + c[3]), color, 3)
-            cv2.putText(frame, str(round(semejanza, 2)), (c[0], c[1] + 25), cv2.FONT_HERSHEY_SIMPLEX, 1,
-                        (255, 255, 255), 1, cv2.LINE_AA)
+        self.reconocimiento_facial(frame)
 
         try:
             # Convertir la imagen de BGR a la textura de Kivy
@@ -145,6 +117,38 @@ class Controller:
             camara_screen.ids.camera_view.texture = image_texture
         except Exception as e:
             print("Error al detectar caras: ", e)
+
+    def reconocimiento_facial(self, frame):
+        h, w, _ = frame.shape
+        detector = cv2.FaceDetectorYN.create("dnn/face_detection_yunet_2023mar.onnx", config="", input_size=(w, h),
+                                             score_threshold=0.7)
+        fr = cv2.FaceRecognizerSF.create("dnn/face_recognition_sface_2021dec.onnx", "")
+        ret, caras = detector.detect(frame)
+
+        # Seccion de debug porque da un fallo de tamaños
+        '''print("Frame original - Tipo de imagen: ", type(frame))
+        print("Frame original - Forma de la imagen: ", frame.shape)
+        print("Frame original - Tipo de datos de la imagen: ", frame.dtype)
+        print("Imagen RGB - Tipo de imagen: ", type(ellen))
+        print("Imagen RGB - Forma de la imagen: ", ellen.shape)
+        print("Imagen RGB - Tipo de datos de la imagen: ", ellen.dtype)'''
+        # Fin de la seccion de debug
+
+        # comparamos las cara y hacemos que se dibuje un rectangulo en la que concuerde
+        for cara in caras:
+            c = cara.astype(int)
+            caracrop = fr.alignCrop(frame, cara)
+            codcara = fr.feature(caracrop)
+            semejanza = fr.match(self.face_code, codcara, cv2.FaceRecognizerSF_FR_COSINE)
+            if semejanza > 0.5:
+                color = (0, 255, 0)
+                #self.cerrarCam() #En caso de que se haya reconocido una cara cerramos la ventana, agregamos la reserva y devolvemos al usuario al homeScreen
+            else:
+                color = (0, 0, 255)
+
+            cv2.rectangle(frame, (c[0], c[1]), (c[0] + c[2], c[1] + c[3]), color, 3)
+            cv2.putText(frame, str(round(semejanza, 2)), (c[0], c[1] + 25), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                        (255, 255, 255), 1, cv2.LINE_AA)
 
     '''def update(self, dt):
         ret, frame = self.capture.read()
