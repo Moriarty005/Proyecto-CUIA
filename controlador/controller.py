@@ -18,6 +18,12 @@ class Controller:
     previous_page = None
     best_cap = None
 
+    """
+    Constructor de la clase controlador
+    
+    :param model, Modelo con el que interactuar (base de datos)
+    :param app, Vista co la que interactuar (Kivy)
+    """
     def __init__(self, model, app):
         self.model = model
         self.app = app
@@ -40,27 +46,42 @@ class Controller:
     ############################################
     '''
 
+    """
+    Método que mueve al usuario a la pantalla de listado de eventos
+    """
     def moveToEventsPage(self):
         print('Nos movemos a la pagina de eventos')
         events_screen = self.app.screen_manager.get_screen('events')
         events_screen.cargar_data_eventos(self.model.traer_eventos())
         self.app.screen_manager.current = 'events'
 
+    """
+    Método que mueve al usuario a la pantalla de registro de usuario
+    """
     def moveToRegisterPage(self):
         print('Nos movemos a la pagina de regsitro')
         self.previous_page = 'login'
         self.app.screen_manager.current = 'register'
 
+    """
+    Método que mueve al usuario a la pantalla de Home
+    """
     def moveToHomePage(self):
         print('Nos movemos a la pagina de home')
         self.previous_page = 'home'
         self.app.screen_manager.current = 'home'
 
+    """
+    Método que mueve al usuario a la pantalla anterior
+    """
     def moveToPreviousPage(self):
         print('Nos movemos a la pagina anterior')
         if(self.previous_page != None):
             self.app.screen_manager.current = self.previous_page
 
+    """
+    Método que mueve al usuario a la pantalla de información ampliada de un evento concreto
+    """
     def moveToEventInfoPage(self, id):
         print('Nos movemos a la pagina de info del evento con id: '+id)
         self.previous_page = 'events'
@@ -74,6 +95,9 @@ class Controller:
         event_info_screen.setIdEvento(id)
         self.app.screen_manager.current = 'eventInfo'
 
+    """
+    Método que mueve al usuario a la pantalla de reconocimiento facial para la reserva de un evento
+    """
     def moveToFaceRecognitionPage(self):
         print('Nos movemos a la pagina de la camara p[ara hacer reconocimiento facial')
         self.previous_page = 'eventInfo'
@@ -82,6 +106,9 @@ class Controller:
         camara_screen.on_enter = lambda: self.playWebcam(self.reconocimiento_facial)
         self.app.screen_manager.current = 'camara'
 
+    """
+    Método que mueve al usuario a la pantalla de foto para codificar su cara en el registro
+    """
     def moveToTakePhotoPage(self):
         print('Nos movemos a la pagina de la camara para tomar una foto')
         self.previous_page = 'register'
@@ -95,6 +122,13 @@ class Controller:
     Funciones de lógica de la aplicación referentes a login y registro de usuarios
     ############################################
     '''
+
+    """
+    Método que comprueba las credenciales del usuario y lo logea en el sistema moviéndolo a la pantalla Home
+    
+    :param username, nombre de usuario
+    :param password, contraseña del usuario
+    """
     def login(self, username, password):
         id_user = self.model.validate_user(username, password)
         if id_user != None:
@@ -114,7 +148,17 @@ class Controller:
             login_screen.ids.error_label.text = 'Invalid username or password'
 
 
-    #TODO hacer el metodo que registre el usuario, comprobando que todos los campos son correctos
+    """
+    Método que registra un nuevo usuario en el sistema
+    
+    :param username, nomre de usuario
+    :param password, contraseña del usuario (No se utiliza)
+    :param name, nombre real del usuario
+    :param surname, apellidos del usuario
+    :param dni, DNI del usuario
+    :param email, email del usuario
+    """
+    #TODO hashear la contraseña y meterla en la base de datos
     def register(self, username, password, name, surname, dni, email):
         evento_screen = self.app.screen_manager.get_screen('register')
         if self.face_code is None or username == None or name == None or dni == None or email == None:
@@ -130,6 +174,9 @@ class Controller:
 
         #TODO hacer boton para ir hacia atras
 
+    """
+    Método de cierra la sesión del usuario devolviéndolo a la pantalla de login
+    """
     def logout(self):
         print('Logged out')
         self.previous_page = None
@@ -153,12 +200,20 @@ class Controller:
     ############################################
     '''
 
+    """
+    Método que crea el evento que abre la cámara
+    
+    :param function, funcion que le pasamos al evento, puede ser la función de reconocimiento facial o la de tomar la foto
+    """
     def playWebcam(self, function):
         print("DEBUG:: creamos la hebra y activamos la camara")
         self.capture = cuia.myVideo(self.my_cam, self.best_cap)
         self.event_camara = Clock.schedule_interval(partial(self.update, function), 1.0 / 30.0)  # Update at 30 FPS
         self.running_cam = True
 
+    """
+    Método que dada una foto codifica la cara que haya en ella y la guarda en la variable correspondiente
+    """
     def codificarCaraUsuario(self, frame):
         # Cargamos la cara que queremos comparar
         #Codificamos la cara
@@ -171,6 +226,11 @@ class Controller:
         self.face_code = fr.feature(usuario_crop)
         print("DEBUG: La cara docificada del usuario es: "+str(self.face_code))
 
+    """
+    Método que actualiza en la pantalla de la cámara de la aplicación los frames que trae la cámara del dispositivo
+    
+    :param funcion, funcion que ejecutará cierta operación sobre un frame
+    """
     def update(self, funcion, dt):
 
         ret, frame = self.capture.read()
@@ -192,6 +252,10 @@ class Controller:
         except Exception as e:
             print("Error al poner la textura: ", e)
 
+    """
+    Método que mediante un booleano comprueba si se ha hecho una foto para el registro de usuario, guardando la foto y utiliazndo el método codificarCaraUsuario para
+    mantener la cara codificada en el sistema
+    """
     def hacerFoto(self, frame, id_evento):
         if self.foto:
             print("Hacemos la foto")
@@ -201,9 +265,17 @@ class Controller:
             self.codificarCaraUsuario(frame)
             self.foto = False
 
+    """
+    Pone a true el booleano que controla la captura de frame cuando se hace una foto
+    """
     def capturar_frame(self):
         self.foto = True
 
+    """
+    Método que mediante OpenCV, FaceDetectorYN y FaceRecognizerSF detecta las cara que haya en un frame dado
+    
+    :param frame, imagen dada sobre la que aplicar el reconocimiento facial
+    """
     def reconocimiento_facial(self, frame, id_evento):
 
         h, w, _ = frame.shape
@@ -245,11 +317,17 @@ class Controller:
         #except Exception as e:
         #    print("Error al detectar caras en el reconocimiento: ", e)
 
+    """
+    Método que libera todos los recursos de la cámara cuando deja de utilizarse
+    """
     def leaveCamera(self, *args):
         self.event_camara.cancel()
         self.capture.release()
         self.foto = None
 
+    """
+    Metodo que cierra la cámara y que mueve al usuario a la pantalla anterior que se estuviese utilizando
+    """
     def cerrarCam(self):
         self.leaveCamera()
         self.moveToPreviousPage()
@@ -261,6 +339,11 @@ class Controller:
     ############################################
     '''
 
+    """
+    Método que comprueba el estado de la funcionalidad de reconocimiento de voz mediante el estado del botón de la interfaz
+    
+    :param toggle_button, boton de la interfaz del que comprobar el estado
+    """
     def on_toggle_button_state(self, toggle_button):
         # Aquí puedes manejar el cambio de estado del ToggleButton
         state = toggle_button.state
@@ -276,6 +359,9 @@ class Controller:
             self.event_voz.join()
             print("El valor del toggle button es normal")
 
+    """
+    Método que, mientras esté activado el reconocimiento de voz, reconoce lo que dice el usuario y lo procesa para saber a qué pantalla moverse
+    """
     def recognize_speech(self):
         while self.esta_escuchando:
             with self.microfono as source:
@@ -303,6 +389,9 @@ class Controller:
                 print("Could not request results from Google Speech Recognition service; {0}".format(e))
 
 
+    """
+    Método que dada una palabra detectada mediante el reconocimiento de voz mueve al usuario a cierta pantalla
+    """
     def mover_con_voz(self, palabra):
         if "home" in palabra.lower():
             self.moveToHomePage()

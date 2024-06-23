@@ -8,6 +8,11 @@ class UserModel:
     def __init__(self):
         pass
 
+    """
+    Método que crea la conexión a la base de datos.
+    
+    :returns la conexión a la base de datos.
+    """
     def crear_conexion(self):
         try:
             conexion = mysql.connector.connect(
@@ -23,6 +28,17 @@ class UserModel:
             print(f"Error al crear la conexion a la base de datos: {err}")
             return None
 
+    """
+    Método que comprueba si las credenciales son correctas
+    
+    :argument username, parámetro que indica el nombre de usuario
+    :argument password, parámetro que indica el password del usuario
+    
+    :returns None en caso de que no exista ningún usuario con esas credenciales
+    :returns id_usuario en caso de que sí exista el usuario con esas credenciales
+    
+    :exception Excepción de MySQL
+    """
     def validate_user(self, username, password):
         try:
             id_usuario = None
@@ -38,6 +54,13 @@ class UserModel:
         #TODO hacer la tabla de contrasenias y validar tambien la contrasenia
         return id_usuario
 
+    """
+    Método que trae de la base de datos todos los eventos disponibles
+    
+    :returns Devuelve item a item todas las tuplas devueltas por la base de datos
+    
+    :exception Excepción de MySQL
+    """
     def traer_eventos(self):
         try:
             conexion = self.crear_conexion()
@@ -50,6 +73,15 @@ class UserModel:
 
         return [item for item in data]
 
+    """
+    Método que trae un evento en concreto en base a un id de evento seleccionado
+    
+    :param id, ID del evento que queremos traer
+    
+    :returns Devuelve item a item todas las tuplas
+    
+    :exception Excepción de MySQL
+    """
     def traer_evento_por_id(self, id):
         try:
             conexion = self.crear_conexion()
@@ -65,6 +97,14 @@ class UserModel:
 
         return [item for item in data]
 
+    """
+    Método que introduce en la base de datos que un usuario a realizado una reserva de un envento
+    
+    :param id_usuario, ID del usuario que hace la reserva
+    :param id_evento, ID del evento que se reserva
+    
+    :exception Excepción de MySQL
+    """
     def hacer_reserva(self, id_usuario, id_evento):
         try:
             conexion = self.crear_conexion()
@@ -79,6 +119,14 @@ class UserModel:
             cursor.close()
             conexion.close()
 
+    """
+    Método que guarda la codificación de la cara de usuario cuando se registra
+    
+    :param username, nombre de usuario en el sistema con el que se identifica el usuario
+    :param cara, cara codificada del usuario
+    
+    :exception Excepción de MySQL
+    """
     def guardar_codificacion_cara_usuario(self, username, cara):
         try:
             conexion = self.crear_conexion()
@@ -99,6 +147,17 @@ class UserModel:
             cursor.close()
             conexion.close()
 
+    """
+    Método que guarda en la base de datos un nuevo usuario cuando se registre
+    
+    :param username, username del usuario 
+    :param name,  nombre real del usuario
+    :param surname, apellidos del usuario
+    :param dni, DNI del usuario
+    :param email, email del usuario
+    
+    :exception Excepción de MySQL
+    """
     def aniadir_usuario(self, username, name, surname, dni, email):
         try:
             conexion = self.crear_conexion()
@@ -120,6 +179,15 @@ class UserModel:
             cursor.close()
             conexion.close()
 
+    """
+    Método que obtiene de la base de datos la cara codificada de un usuario dado
+    
+    :param id_usuario, ID del usuario del que queremos obtener la cara
+    
+    :returns la tupla con al cara
+    
+    :exception Excepción de MySQL
+    """
     def get_codificacion_cara(self, id_usuario):
         try:
             conexion = self.crear_conexion()
