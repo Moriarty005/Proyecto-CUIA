@@ -6,16 +6,22 @@
 
         FloatLayout:
             size_hint: dp(1), dp(.3)
+            ToggleButton:
+                text: 'Comandos de voz'
+                anchor_x: 'center'
+                size_hint: dp(.2), dp(.2)
+                pos_hint: {"right":1, "center_y":0.5}
+                on_state: app.controller.on_toggle_button_state(self)
+            Image:
+                source: 'media/logo.png'
+                size_hint: dp(.5), None
+                pos_hint: {"center_x":0.5, "center_y":.5}
             MDRaisedButton:
                 anchor_x: 'center'
                 text: 'Logout'
                 on_press: app.controller.logout()
                 size_hint: dp(.2), dp(.2)
-                pos_hint: {"right":1, "center_y":0.5}
-            Image:
-                source: 'media/logo.png'
-                size_hint: dp(.5), None
-                pos_hint: {"center_x":0.5, "center_y":.5}
+                pos_hint: {"left":1, "center_y":0.5}
 
         BoxLayout
             orientation: 'vertical'
@@ -32,21 +38,17 @@
                 on_press: app.controller.moveToEventsPage()
 
             MDRaisedButton:
-                text: 'Mis eventos'
+                text: 'Mis eventos (No implementado)'
+                size_hint_y: dp(self.parent.height / 5)
+                size_hint_x: dp(1)
+
+
+            MDRaisedButton:
+                text: 'Ver plantillas (No implementado)'
                 size_hint_y: dp(self.parent.height / 5)
                 size_hint_x: dp(1)
 
             MDRaisedButton:
-                text: 'Button 3'
-                size_hint_y: dp(self.parent.height / 5)
-                size_hint_x: dp(1)
-
-            MDRaisedButton:
-                text: 'Button 4'
-                size_hint_y: dp(self.parent.height / 5)
-                size_hint_x: dp(1)
-
-            MDRaisedButton:
-                text: 'Button 5'
+                text: 'Mi perfil (No implementado)'
                 size_hint_y: dp(self.parent.height / 5)
                 size_hint_x: dp(1)

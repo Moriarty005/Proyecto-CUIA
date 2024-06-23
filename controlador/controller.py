@@ -1,11 +1,11 @@
 # controller.py
 import json
+import threading
 
 import numpy as np
-import sift
 from kivy.clock import Clock
 from kivy.core.image import Texture
-from kivy.properties import BooleanProperty, partial
+from kivy.properties import partial
 
 import controlador.cuia as cuia
 import cv2
@@ -25,10 +25,14 @@ class Controller:
         self.best_cap = cuia.bestBackend(self.my_cam)
         self.running_cam = False
         self.capture = None
-        self.event = None
+        self.event_camara = None
         self.face_code = None
         self.id_usuario = 0
         self.foto = False
+        self.speech_recognizer = None
+        self.event_voz = None
+        self.microfono = None
+        self.esta_escuchando = False
 
     '''
     ############################################
@@ -129,18 +133,30 @@ class Controller:
     def logout(self):
         print('Logged out')
         self.previous_page = None
+        self.running_cam = False
+        self.capture = None
+        self.event_camara = None
+        self.face_code = None
+        self.id_usuario = 0
+        self.foto = False
+        self.speech_recognizer = None
+        self.event_voz = None
+        self.microfono = None
+        self.esta_escuchando = False
+        if self.event_voz:
+            self.event_voz.join()
         self.app.screen_manager.current = 'login'
 
     '''
     ############################################
-    Funciones de lógica general de la aplicación
+    Funciones de reconocimiento facial
     ############################################
     '''
 
     def playWebcam(self, function):
         print("DEBUG:: creamos la hebra y activamos la camara")
         self.capture = cuia.myVideo(self.my_cam, self.best_cap)
-        self.event = Clock.schedule_interval(partial(self.update, function), 1.0 / 30.0)  # Update at 30 FPS
+        self.event_camara = Clock.schedule_interval(partial(self.update, function), 1.0 / 30.0)  # Update at 30 FPS
         self.running_cam = True
 
     def codificarCaraUsuario(self, frame):
@@ -218,8 +234,8 @@ class Controller:
             semejanza = fr.match(self.face_code, codcara, cv2.FaceRecognizerSF_FR_COSINE)
             if semejanza > 0.5:
                 color = (0, 255, 0)
-                #self.model.hacer_reserva(self.id_usuario, id_evento)
-                #self.cerrarCam() #En caso de que se haya reconocido una cara cerramos la ventana, agregamos la reserva y devolvemos al usuario al homeScreen
+                self.model.hacer_reserva(self.id_usuario, id_evento)
+                self.cerrarCam() #En caso de que se haya reconocido una cara cerramos la ventana, agregamos la reserva y devolvemos al usuario al homeScreen
             else:
                 color = (0, 0, 255)
 
@@ -229,66 +245,72 @@ class Controller:
         #except Exception as e:
         #    print("Error al detectar caras en el reconocimiento: ", e)
 
-
-    '''def update(self, dt):
-        ret, frame = self.capture.read()
-        camara_screen = self.app.screen_manager.get_screen('camara')
-
-        if not ret:
-            print("Error: no se pudo leer el frame de la cámara.")
-            return
-
-        # Verificar el frame original
-        print("Frame original - Tipo de imagen: ", type(frame))
-        print("Frame original - Forma de la imagen: ", frame.shape)
-        print("Frame original - Tipo de datos de la imagen: ", frame.dtype)
-
-        # Imprimir algunos valores de los píxeles
-        print("Frame original - Valores de los primeros 5 píxeles:", frame[0, :5, :])
-
-        # Convertir el frame de BGR a RGB
-        ellen_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-        # Verificar el tipo de imagen, la forma y el tipo de datos después de la conversión
-        print("Imagen RGB - Tipo de imagen: ", type(ellen_rgb))
-        print("Imagen RGB - Forma de la imagen: ", ellen_rgb.shape)
-        print("Imagen RGB - Tipo de datos de la imagen: ", ellen_rgb.dtype)
-
-        # Imprimir algunos valores de los píxeles después de la conversión
-        print("Imagen RGB - Valores de los primeros 5 píxeles:", ellen_rgb[0, :5, :])
-
-        # Asegurarse de que la imagen está en formato RGB
-        if ellen_rgb.shape[2] != 3:
-            print("Error: la imagen no tiene 3 canales (RGB).")
-            return
-
-        cv2.imwrite('debug_frame.jpg', frame)
-        cv2.imwrite('debug_ellen_rgb.jpg', ellen_rgb)
-
-        try:
-            # Detectar caras en la imagen RGB
-            caras_ellen = fr.face_locations(frame)
-            print("Caras detectadas: ", caras_ellen)
-
-            # Si se detecta alguna cara, dibujar un rectángulo alrededor de cada una
-            if caras_ellen:
-                for c in caras_ellen:
-                    cv2.rectangle(frame, (c[3], c[0]), (c[1], c[2]), (0, 255, 0), 2)
-
-            # Convertir la imagen de BGR a la textura de Kivy
-            buf = cv2.flip(frame, 0).tobytes()
-            image_texture = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='bgr')
-            image_texture.blit_buffer(buf, colorfmt='bgr', bufferfmt='ubyte')
-            camara_screen.ids.camera_view.texture = image_texture
-        except Exception as e:
-            print("Error al detectar caras: ", e)'''
-
     def leaveCamera(self, *args):
-        self.event.cancel()
+        self.event_camara.cancel()
         self.capture.release()
         self.foto = None
 
     def cerrarCam(self):
         self.leaveCamera()
         self.moveToPreviousPage()
-        self.event.release()
+        self.event_camara.release()
+
+    '''
+    ############################################
+    Funciones de reconocimiento de voz
+    ############################################
+    '''
+
+    def on_toggle_button_state(self, toggle_button):
+        # Aquí puedes manejar el cambio de estado del ToggleButton
+        state = toggle_button.state
+        if state == 'down':
+            print("El valor del toggle button es down")
+            self.event_voz = threading.Thread(target=self.recognize_speech)
+            self.speech_recognizer = sr.Recognizer()
+            self.microfono = sr.Microphone()
+            self.esta_escuchando = True
+            self.event_voz.start()
+        else:
+            self.esta_escuchando = False
+            self.event_voz.join()
+            print("El valor del toggle button es normal")
+
+    def recognize_speech(self):
+        while self.esta_escuchando:
+            with self.microfono as source:
+                self.speech_recognizer.adjust_for_ambient_noise(source, duration=0.5)  # listen for 1 second to calibrate the energy threshold for ambient noise levels
+                print("Say something!")
+                audio = self.speech_recognizer.listen(source)
+
+            try:
+                results = self.speech_recognizer.recognize_google(audio, language="es-ES", show_all=True)
+                print("DEBUG:: Lo que se ha dicho pero sin procesar: ", results)
+                if isinstance(results, dict):
+                    if len(results.get('alternative', [])) > 0:
+                        most_likely_result = results['alternative'][0]['transcript']
+                    else:
+                        most_likely_result = "No se reconoció ninguna palabra"
+                else:
+                    most_likely_result = "Google Speech Recognition no devolvió resultados esperados"
+                print("DEBUG:: Que se ha dicho: "+most_likely_result)
+                #Clock.schedule_once(lambda dt: self.mover_con_voz(results), 0)
+
+                print(most_likely_result)
+            except sr.UnknownValueError:
+                print("Google Speech Recognition could not understand audio")
+            except sr.RequestError as e:
+                print("Could not request results from Google Speech Recognition service; {0}".format(e))
+
+
+    def mover_con_voz(self, palabra):
+        if "home" in palabra.lower():
+            self.moveToHomePage()
+        elif "eventos" in palabra.lower():
+            self.moveToEventsPage()
+        elif "retroceder" in palabra.lower():
+            self.moveToPreviousPage()
+        elif "desconectar" in palabra.lower():
+            self.logout()
+        else:
+            print("No se reconoció ningún comando válido")

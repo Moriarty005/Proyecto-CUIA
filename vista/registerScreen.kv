@@ -26,7 +26,11 @@
             padding: 25
             spacing: 20
             orientation: 'vertical'
-
+            MDLabel:
+                text: 'Register'
+                font_style: 'H4'
+                halign: 'center'
+                size_hint: dp(1), dp(.3)
             ScrollView:
                 do_scroll_x: False
                 do_scroll_y: True
@@ -36,11 +40,6 @@
                     size_hint_y: None
                     height: self.minimum_height
                     spacing: 20
-
-                    MDLabel:
-                        text: 'Register'
-                        font_style: 'H4'
-                        halign: 'center'
 
                     MDTextField:
                         id: username
@@ -86,8 +85,11 @@
                         size_hint_x: None
                         width: 250
                         pos_hint: {'center_x': 0.5}
-                    MDLabel:
-                        text: 'Los campos con un asterisco son obligatorios'
+        MDLabel:
+            text: 'Los campos con un asterisco son obligatorios'
+            size_hint: None, None
+            size: 400, 60
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5}
         MDRaisedButton:
             text: 'Register'
             pos_hint: {'center_x': 0.5}
