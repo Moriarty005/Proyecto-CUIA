@@ -1,5 +1,6 @@
 <EventInfoScreen>
     name: 'eventInfo'
+    id_evento: ''
     BoxLayout:
         orientation: 'vertical'
         pos_hint: {"center_x": 0.5, "center_y": 0.5}
@@ -54,4 +55,4 @@
             MDRaisedButton:
                 text: 'Por implementar (reconocimiento facial)'
                 pos_hint: {'center_x': 0.5}
-                on_press: app.controller.moveToCamPage()
+                on_press: app.controller.moveToFaceRecognitionPage()

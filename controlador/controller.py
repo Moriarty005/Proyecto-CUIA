@@ -1,7 +1,11 @@
 # controller.py
+import json
+
+import numpy as np
 import sift
 from kivy.clock import Clock
 from kivy.core.image import Texture
+from kivy.properties import BooleanProperty, partial
 
 import controlador.cuia as cuia
 import cv2
@@ -12,7 +16,6 @@ import speech_recognition as sr
 class Controller:
 
     previous_page = None
-    my_cam = 0
     best_cap = None
 
     def __init__(self, model, app):
@@ -25,32 +28,24 @@ class Controller:
         self.event = None
         self.face_code = None
         self.id_usuario = 0
+        self.foto = False
 
-    def login(self, username, password):
-        id_user = self.model.validate_user(username, password)
-        if id_user != None:
-            print('Login successful')
-            self.id_usuario = id_user
-            self.app.screen_manager.current = 'home'
-            self.previous_page = 'home'
-
-            login_screen = self.app.screen_manager.get_screen('login')
-            login_screen.ids.error_label.text = ''
-        else:
-            print('No existe ese usuario')
-            login_screen = self.app.screen_manager.get_screen('login')
-            login_screen.ids.error_label.text = 'Invalid username or password'
-
-    def logout(self):
-        print('Logged out')
-        self.previous_page = None
-        self.app.screen_manager.current = 'login'
+    '''
+    ############################################
+    Funciones para movernos entre las pantallas
+    ############################################
+    '''
 
     def moveToEventsPage(self):
         print('Nos movemos a la pagina de eventos')
         events_screen = self.app.screen_manager.get_screen('events')
         events_screen.cargar_data_eventos(self.model.traer_eventos())
         self.app.screen_manager.current = 'events'
+
+    def moveToRegisterPage(self):
+        print('Nos movemos a la pagina de regsitro')
+        self.previous_page = 'login'
+        self.app.screen_manager.current = 'register'
 
     def moveToHomePage(self):
         print('Nos movemos a la pagina de home')
@@ -72,33 +67,95 @@ class Controller:
         event_info_screen.ids.recinto_evento.text = str(info_evento[2])
         event_info_screen.ids.direccion_evento.text = str(info_evento[3])
         event_info_screen.ids.fecha_evento.text = str(info_evento[4])
+        event_info_screen.setIdEvento(id)
         self.app.screen_manager.current = 'eventInfo'
 
-    def moveToCamPage(self):
-        print('Nos movemos a la pagina de la camara')
+    def moveToFaceRecognitionPage(self):
+        print('Nos movemos a la pagina de la camara p[ara hacer reconocimiento facial')
+        self.previous_page = 'eventInfo'
+        camara_screen = self.app.screen_manager.get_screen('camara')
+        camara_screen.show_button = True
+        camara_screen.on_enter = lambda: self.playWebcam(self.reconocimiento_facial)
         self.app.screen_manager.current = 'camara'
 
-    def playWebcam(self):
+    def moveToTakePhotoPage(self):
+        print('Nos movemos a la pagina de la camara para tomar una foto')
+        self.previous_page = 'register'
+        camara_screen = self.app.screen_manager.get_screen('camara')
+        camara_screen.show_button = False
+        camara_screen.on_enter = lambda: self.playWebcam(self.hacerFoto)
+        self.app.screen_manager.current = 'camara'
+
+    '''
+    ############################################
+    Funciones de lógica de la aplicación referentes a login y registro de usuarios
+    ############################################
+    '''
+    def login(self, username, password):
+        id_user = self.model.validate_user(username, password)
+        if id_user != None:
+            print('Login successful')
+            self.id_usuario = id_user
+            self.app.screen_manager.current = 'home'
+            self.previous_page = 'home'
+            self.face_code = self.model.get_codificacion_cara(id_user)
+            python_list = json.loads(self.face_code)
+            self.face_code = np.array(python_list)
+            print("DEBUG:: codigo de la cara que nos traemos de la base de datos: "+str(self.face_code))
+            login_screen = self.app.screen_manager.get_screen('login')
+            login_screen.ids.error_label.text = ''
+        else:
+            print('No existe ese usuario')
+            login_screen = self.app.screen_manager.get_screen('login')
+            login_screen.ids.error_label.text = 'Invalid username or password'
+
+
+    #TODO hacer el metodo que registre el usuario, comprobando que todos los campos son correctos
+    def register(self, username, password, name, surname, dni, email):
+        evento_screen = self.app.screen_manager.get_screen('register')
+        if self.face_code is None or username == None or name == None or dni == None or email == None:
+            #print("DEBUG:: da error porque falta algo")
+            #print(f"DEBUG:: username: {username}\n password: {password}\n name: {name}\n dni: {dni}\n email: {email}\n Foto:{str(self.face_code)}")
+            evento_screen.ids.error_label.text = "Tiene que rellenar los campos obligatorios y hacerse la foto"
+        else:
+            evento_screen.ids.error_label.text = ''
+            print("DEBUG:: añadimos usuario y su foto")
+            self.model.aniadir_usuario(username, name, surname, dni, email)
+            self.model.guardar_codificacion_cara_usuario(username, self.face_code)
+            self.moveToPreviousPage()
+
+        #TODO hacer boton para ir hacia atras
+
+    def logout(self):
+        print('Logged out')
+        self.previous_page = None
+        self.app.screen_manager.current = 'login'
+
+    '''
+    ############################################
+    Funciones de lógica general de la aplicación
+    ############################################
+    '''
+
+    def playWebcam(self, function):
         print("DEBUG:: creamos la hebra y activamos la camara")
         self.capture = cuia.myVideo(self.my_cam, self.best_cap)
-        self.codificarCaraUsuario()
-        self.event = Clock.schedule_interval(self.update, 1.0 / 30.0)  # Update at 30 FPS
+        self.event = Clock.schedule_interval(partial(self.update, function), 1.0 / 30.0)  # Update at 30 FPS
         self.running_cam = True
 
-    def codificarCaraUsuario(self):
+    def codificarCaraUsuario(self, frame):
         # Cargamos la cara que queremos comparar
-        foto_usuario = cv2.imread("media/xinio.jpeg") #TODO traernos la foto de la base de datos
-        foto_usuario = cv2.resize(foto_usuario, dsize=None, fx=0.5, fy=0.5)
         #Codificamos la cara
         fr = cv2.FaceRecognizerSF.create("dnn/face_recognition_sface_2021dec.onnx", "")
-        h2, w2, _ = foto_usuario.shape
+        h2, w2, _ = frame.shape
         detector2 = cv2.FaceDetectorYN.create("dnn/face_detection_yunet_2023mar.onnx", config="", input_size=(w2, h2),
                                               score_threshold=0.7)
-        ret, cara_usuario = detector2.detect(foto_usuario)
-        usuario_crop = fr.alignCrop(foto_usuario, cara_usuario[0])
+        ret, cara_usuario = detector2.detect(frame)
+        usuario_crop = fr.alignCrop(frame, cara_usuario[0])
         self.face_code = fr.feature(usuario_crop)
+        print("DEBUG: La cara docificada del usuario es: "+str(self.face_code))
 
-    def update(self, dt):
+    def update(self, funcion, dt):
 
         ret, frame = self.capture.read()
         if not ret: #En caso de que no se retorne nada de la camara abortamos
@@ -106,8 +163,9 @@ class Controller:
             return
 
         camara_screen = self.app.screen_manager.get_screen('camara') #Nos traemos la pantalla de la camara a una variable para poder modificar la imagen y meterle el frame de la camara
+        evento_screen = self.app.screen_manager.get_screen('eventInfo') #Obtenemos el id del evento a reservar
 
-        self.reconocimiento_facial(frame)
+        funcion(frame, evento_screen.getIdEvento())
 
         try:
             # Convertir la imagen de BGR a la textura de Kivy
@@ -116,9 +174,22 @@ class Controller:
             image_texture.blit_buffer(buf, colorfmt='bgr', bufferfmt='ubyte')
             camara_screen.ids.camera_view.texture = image_texture
         except Exception as e:
-            print("Error al detectar caras: ", e)
+            print("Error al poner la textura: ", e)
 
-    def reconocimiento_facial(self, frame):
+    def hacerFoto(self, frame, id_evento):
+        if self.foto:
+            print("Hacemos la foto")
+            camara_screen = self.app.screen_manager.get_screen('camara')
+            camara_screen.ids.action_button.background_color = 0, 1, 0, 1
+            cv2.imwrite('media/cara_usuario.jpg', frame)
+            self.codificarCaraUsuario(frame)
+            self.foto = False
+
+    def capturar_frame(self):
+        self.foto = True
+
+    def reconocimiento_facial(self, frame, id_evento):
+
         h, w, _ = frame.shape
         detector = cv2.FaceDetectorYN.create("dnn/face_detection_yunet_2023mar.onnx", config="", input_size=(w, h),
                                              score_threshold=0.7)
@@ -135,13 +206,19 @@ class Controller:
         # Fin de la seccion de debug
 
         # comparamos las cara y hacemos que se dibuje un rectangulo en la que concuerde
+        #try:
         for cara in caras:
             c = cara.astype(int)
             caracrop = fr.alignCrop(frame, cara)
             codcara = fr.feature(caracrop)
+
+            self.face_code = np.array(self.face_code, dtype=np.float32)
+            codcara = np.array(codcara, dtype=np.float32)
+
             semejanza = fr.match(self.face_code, codcara, cv2.FaceRecognizerSF_FR_COSINE)
             if semejanza > 0.5:
                 color = (0, 255, 0)
+                #self.model.hacer_reserva(self.id_usuario, id_evento)
                 #self.cerrarCam() #En caso de que se haya reconocido una cara cerramos la ventana, agregamos la reserva y devolvemos al usuario al homeScreen
             else:
                 color = (0, 0, 255)
@@ -149,6 +226,9 @@ class Controller:
             cv2.rectangle(frame, (c[0], c[1]), (c[0] + c[2], c[1] + c[3]), color, 3)
             cv2.putText(frame, str(round(semejanza, 2)), (c[0], c[1] + 25), cv2.FONT_HERSHEY_SIMPLEX, 1,
                         (255, 255, 255), 1, cv2.LINE_AA)
+        #except Exception as e:
+        #    print("Error al detectar caras en el reconocimiento: ", e)
+
 
     '''def update(self, dt):
         ret, frame = self.capture.read()
@@ -206,8 +286,9 @@ class Controller:
     def leaveCamera(self, *args):
         self.event.cancel()
         self.capture.release()
-        self.face_code = None
+        self.foto = None
 
     def cerrarCam(self):
         self.leaveCamera()
-        self.moveToHomePage()
+        self.moveToPreviousPage()
+        self.event.release()

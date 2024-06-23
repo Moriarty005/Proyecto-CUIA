@@ -6,7 +6,7 @@
         spacing: 10
         MDCard:
             size_hint: None, None
-            size: 300, 400
+            size: 350, 400
             pos_hint: {'center_x': 0.5, 'center_y': 0.5}
             elevation: 10
             padding: 25
@@ -41,3 +41,19 @@
                 text: 'Login'
                 pos_hint: {'center_x': 0.5}
                 on_release: app.controller.login(username.text, password.text)
+        MDCard:
+            size_hint: None, None
+            size: 350, 100
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+            elevation: 10
+            padding: 25
+            spacing: 20
+            orientation: 'vertical'
+            MDLabel:
+                pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+                padding: 25
+                text: '¿Todavía no estás registrado?'
+            MDRaisedButton:
+                text: 'Register'
+                pos_hint: {'center_x': 0.5}
+                on_press: app.controller.moveToRegisterPage()
